@@ -35,91 +35,44 @@
 #ifndef _ROSSERIAL_VEX_V5_V5_HARDWARE_H_
 #define _ROSSERIAL_VEX_V5_V5_HARDWARE_H_
 
-#include "ros_lib/rosserial_vex_v5/utils/RingBuf.h"
-
- // for the mutex.
 #include "pros/apix.h"
-
-#define SERIAL_CLASS int
-#define ROSVEX_BUFFER_INPUT_SIZE 32
-
-using RB = RingBufCPP<char, ROSVEX_BUFFER_INPUT_SIZE>;
-
-// load the serial reading into a buffer.
-inline void vexRosBufferInput(void* arg) {
-
-  void** arglist = (void**)arg;
-  RB* inputBuffer = (RB*)arglist[0];
-  __FILE* streamOut = (__FILE*)arglist[1];
-
-  int readcount = 0;
-  while (1) {
-    char c = fgetc(streamOut);
-    inputBuffer->add(c);
-  }
-}
 
 class V5Hardware {
 
 public:
-  V5Hardware() : rosvexMutex(), inputBuffer(rosvexMutex), failCount(), successCount() {
+  V5Hardware(int readPortNum=19, int writePortNum=20, int baud=115200) : readPort(readPortNum), 
+    writePort(writePortNum) {
+      readPort.set_baudrate(baud);
+      writePort.set_baudrate(baud);
   }
 
   // any initialization code necessary to use the serial port
   // note: the serial port initialization for rosserial for VEX Cortex must be implemented in `src/init.cpp` 
   // see that file for more information. 
   void init() {
-    pros::c::serctl(SERCTL_DISABLE_COBS, NULL);
-    rosFile = fopen("/ser/sout", "r+");
-    pros::c::fdctl(fileno(rosFile), SERCTL_DEACTIVATE, NULL);
 
-    // not typesafe, be careful!
-    void** taskArgs = (void**)malloc(sizeof(void*) * 2);
-    taskArgs[0] = &inputBuffer;
-    taskArgs[1] = rosFile;
-
-    pros::Task reader(vexRosBufferInput, taskArgs);
   }
 
   // read a byte from the serial port. -1 = failure
   int read() {
-    char c;
-    // pull serial reading out of the buffer.
-    if (inputBuffer.pull(&c)) {
-      char sucmsg[16];
-      return c;
+    char c = readPort.read_byte();
+    if(c == PROS_ERR) {
+      return -1;
     }
-
-    return -1;
+    return c;
   }
 
   // write data to the connection to ROS
   void write(uint8_t* data, int length) {
-    for (int i = 0; i < length; i++) {
-      vexroswritechar(data[i]);
-    }
+    writePort.write(data, length);
   }
   // returns milliseconds since start of program
   unsigned long time() {
     return pros::c::millis();
   }
 private:
-  int failCount;
-  int successCount;
-  pros::Mutex rosvexMutex;
-  __FILE* rosFile;
-  RB inputBuffer;
-
-  // writing helper.
-  void vexroswritechar(uint8_t data) {
-    fputc(data, rosFile);
-    fflush(rosFile);
-  }
-
-  // reading helper.
-  char vexrosreadchar() {
-    return fgetc(rosFile);
-  }
+  pros::Serial readPort;
+  pros::Serial writePort;
 };
 
 #endif
