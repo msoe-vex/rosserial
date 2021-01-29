@@ -40,7 +40,7 @@
 #include "ros_lib/V5Hardware.h"
 
 namespace ros {
-  typedef NodeHandle_<V5Hardware> NodeHandle;
+  typedef NodeHandle_<V5Hardware, 50, 50, 2048, 2048> NodeHandle;
 }
 
 #endif
