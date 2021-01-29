@@ -38,41 +38,37 @@
 #include "pros/apix.h"
 
 class V5Hardware {
+   public:
+    V5Hardware(int readPortNum = 19, int writePortNum = 20, int baud = 115200)
+        : readPort(readPortNum), writePort(writePortNum), baud(baud) {}
 
-public:
-  V5Hardware(int readPortNum=19, int writePortNum=20, int baud=115200) : readPort(readPortNum), 
-    writePort(writePortNum) {
-      readPort.set_baudrate(baud);
-      writePort.set_baudrate(baud);
-  }
-
-  // any initialization code necessary to use the serial port
-  // note: the serial port initialization for rosserial for VEX Cortex must be implemented in `src/init.cpp` 
-  // see that file for more information. 
-  void init() {
-
-  }
-
-  // read a byte from the serial port. -1 = failure
-  int read() {
-    char c = readPort.read_byte();
-    if(c == PROS_ERR) {
-      return -1;
+    void init() {
+        pros::delay(10);
+        readPort.flush();
+        writePort.flush();
+        pros::delay(10);
+        readPort.set_baudrate(baud);
+        writePort.set_baudrate(baud);
     }
-    return c;
-  }
 
-  // write data to the connection to ROS
-  void write(uint8_t* data, int length) {
-    writePort.write(data, length);
-  }
-  // returns milliseconds since start of program
-  unsigned long time() {
-    return pros::c::millis();
-  }
-private:
-  pros::Serial readPort;
-  pros::Serial writePort;
+    // read a byte from the serial port. -1 = failure
+    int read() {
+        int c = readPort.read_byte();
+        if (c == PROS_ERR) {
+            return -1;
+        }
+        return c;
+    }
+
+    // write data to the connection to ROS
+    void write(uint8_t* data, int length) { writePort.write(data, length); }
+    // returns milliseconds since start of program
+    unsigned long time() { return pros::c::millis(); }
+
+   private:
+    int baud;
+    pros::Serial readPort;
+    pros::Serial writePort;
 };
 
 #endif
