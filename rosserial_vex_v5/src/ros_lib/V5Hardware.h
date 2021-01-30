@@ -36,37 +36,39 @@
 #define _ROSSERIAL_VEX_V5_V5_HARDWARE_H_
 
 #include "pros/apix.h"
+#include "stdio.h"
 
 class V5Hardware {
    public:
     V5Hardware(int readPortNum = 19, int writePortNum = 20, int baud = 115200)
-        : readPort(readPortNum), writePort(writePortNum), baud(baud) {}
+        : readPort(readPortNum, baud),
+          writePort(writePortNum, baud) {}
 
     void init() {
         pros::delay(10);
         readPort.flush();
         writePort.flush();
-        pros::delay(10);
-        readPort.set_baudrate(baud);
-        writePort.set_baudrate(baud);
     }
 
     // read a byte from the serial port. -1 = failure
-    int read() {
-        int c = readPort.read_byte();
-        if (c == PROS_ERR) {
-            return -1;
-        }
-        return c;
+    int read() { 
+        int read = readPort.read_byte();
+        return read;
     }
 
     // write data to the connection to ROS
-    void write(uint8_t* data, int length) { writePort.write(data, length); }
+    void write(uint8_t* data, int length) { 
+        writePort.write(data, length); 
+
+        if(writePort.get_write_free() == 0) {
+            printf("Warning: Serial buffer is full!\n");
+        }
+    }
+
     // returns milliseconds since start of program
     unsigned long time() { return pros::c::millis(); }
 
    private:
-    int baud;
     pros::Serial readPort;
     pros::Serial writePort;
 };
