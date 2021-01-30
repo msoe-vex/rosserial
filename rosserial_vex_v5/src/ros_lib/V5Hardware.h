@@ -36,7 +36,6 @@
 #define _ROSSERIAL_VEX_V5_V5_HARDWARE_H_
 
 #include "pros/apix.h"
-#include "stdio.h"
 
 class V5Hardware {
    public:
