@@ -58,10 +58,19 @@ class V5Hardware {
 
     // write data to the connection to ROS
     void write(uint8_t* data, int length) { 
-        writePort.write(data, length); 
+        int freeBytes = writePort.get_write_free();
 
-        if(writePort.get_write_free() == 0) {
-            printf("Warning: Serial buffer is full!\n");
+        if(freeBytes > length) { // Enough bytes free in buffer
+            writePort.write(data, length);
+        } else {
+            printf("Serial buffer full!\n");
+            writePort.write(data, freeBytes);
+            for(int i = freeBytes; i < length; i++) {
+                while(writePort.get_write_free() == 0) {
+                    pros::delay(5);
+                }
+                writePort.write_byte(data[i]);
+            }
         }
     }
 
